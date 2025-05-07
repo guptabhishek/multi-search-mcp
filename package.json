@@ -1,0 +1,30 @@
+{
+  "name": "mcp-search-server",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mcp-search-server": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@m/sdk": "0.6.0",
+    "axios": "^1.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.24"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@0.6.0"
+  }
+}
