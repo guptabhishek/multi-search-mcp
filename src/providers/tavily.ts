@@ -26,7 +26,6 @@ export async function searchTavily(query: string, apiKey: string, numResults: nu
     }, {
       headers: {
         'Content-Type': 'application/json',
-        // **FIX: Using Authorization: Bearer header as shown in the curl example**
         'Authorization': `Bearer ${apiKey}`
       }
     });
@@ -34,7 +33,6 @@ export async function searchTavily(query: string, apiKey: string, numResults: nu
     // Check if response data or results array is valid
     if (!response.data || !Array.isArray(response.data.results)) {
          console.error('Tavily API returned unexpected response format:', response.data);
-         // Provide more context in the error message if response.data or results is available
          const errorDetails = response.data ? JSON.stringify(response.data).substring(0, 200) + '...' : 'No response data';
          throw new Error(`Tavily API returned unexpected response format: ${errorDetails}`);
     }
@@ -43,15 +41,14 @@ export async function searchTavily(query: string, apiKey: string, numResults: nu
     // Filtering for valid results (e.g., missing title/link/content) is better done in the standardize step
     // This mapping just assumes the basic structure exists and provides defaults
     return response.data.results.map((item: any) => ({
-      title: item.title || '', // Ensure title exists, default to empty string
-      link: item.url || '',   // Ensure link exists, default to empty string
-      content: item.content || '', // Ensure content (snippet) exists, default to empty string
+      title: item.title || '',
+      link: item.url || '',   
+      content: item.content || '',
     })).filter((item: SimplifiedSearchResult) => item.title && item.link && item.content); // Optional: Filter out results with no title, link, or content
 
 
   } catch (error: any) {
     console.error('Tavily Search API Error:', error.message);
-    // Re-throw the error so the MCP server handler can catch and handle it
     throw error;
   }
 }

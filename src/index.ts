@@ -4,17 +4,19 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 // Correct the import: CallToolResultSchema instead of CallToolResponseSchema
 import { ListToolsRequestSchema, CallToolRequestSchema, ErrorCode, McpError, CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js';
-import { PROVIDER_PRIORITY, DEFAULT_NUM_RESULTS } from './config.js';
+import { PROVIDER_LIST, SEARCH_STRATEGY, DEFAULT_NUM_RESULTS } from './config.js';
 import { searchGoogle } from './providers/google.js';
 import { searchTavily } from './providers/tavily.js';
+import { searchDuckDuckGo } from './providers/duckduckgo.js';
+import { searchBrave } from './providers/brave.js';
 // Import the new interface and updated functions
-import { StandardizedSearchResult, standardizeGoogleResults, standardizeTavilyResults } from './utils/standardize.js';
+import { StandardizedSearchResult, standardizeGoogleResults, standardizeTavilyResults, standardizeDuckDuckGoResults, standardizeBraveResults } from './utils/standardize.js';
 
 const TOOL_NAME = 'search';
 
 const TOOL_DEFINITION = {
   name: TOOL_NAME,
-  description: 'Performs a web search using multiple providers (google, tavily).',
+  description: 'Performs a web search using multiple providers (google, tavily, duckduckgo, brave).',
   inputSchema: {
     type: 'object',
     properties: {
@@ -24,8 +26,8 @@ const TOOL_DEFINITION = {
       },
       provider: {
         type: 'string',
-        enum: ['google', 'tavily'],
-        description: 'Optional: Specify a provider directly (google, tavily). If omitted, uses priority fallback.',
+        enum: ['google', 'tavily', 'duckduckgo', 'brave'],
+        description: 'Optional: Specify a provider directly (google, tavily, duckduckgo, brave). If omitted, uses priority fallback.',
       },
       num_results: {
         type: 'integer',
@@ -47,17 +49,22 @@ type StandardizeFunction = (rawResults: any[], providerName: string) => Standard
 const searchFunctions: Record<string, SearchFunction> = {
   google: searchGoogle,
   tavily: searchTavily,
+  duckduckgo: searchDuckDuckGo,
+  brave: searchBrave,
 };
 
 const standardizeFunctions: Record<string, StandardizeFunction> = {
   google: standardizeGoogleResults,
   tavily: standardizeTavilyResults,
+  duckduckgo: standardizeDuckDuckGoResults,
+  brave: standardizeBraveResults,
 };
 
 const API_KEYS = {
   tavily_key: process.env.TAVILY_API_KEY || '',
   google_key: process.env.GOOGLE_API_KEY || '',
   google_cx: process.env.GOOGLE_CX || '',
+  brave_key: process.env.BRAVE_API_KEY || '',
 };
 
 class McpSearchServer {
@@ -121,9 +128,23 @@ class McpSearchServer {
 
 
       // --- Start of logic to track fallback and order ---
-      const providersAttemptedOrder = requestedProvider ? [requestedProvider] : PROVIDER_PRIORITY;
+      let providersAttemptedOrder: string[];
+      if (requestedProvider) {
+        providersAttemptedOrder = [requestedProvider];
+      } else if (SEARCH_STRATEGY === 'random') {
+        // Pick a random provider from the enabled list
+        const enabled = PROVIDER_LIST.filter(p => searchFunctions[p]);
+        if (enabled.length === 0) {
+          throw new McpError(ErrorCode.InternalError, 'No enabled providers available for random selection.');
+        }
+        const randomProvider = enabled[Math.floor(Math.random() * enabled.length)];
+        providersAttemptedOrder = [randomProvider];
+      } else {
+        // Default: priority order (try all in order)
+        providersAttemptedOrder = PROVIDER_LIST.filter(p => searchFunctions[p]);
+      }
       // Fallback is considered triggered if no specific provider was requested,
-      // meaning the server attempted providers based on the priority list.
+      // meaning the server attempted providers based on the configured list.
       const fallbackTriggered = !requestedProvider;
       // --- End of logic to track fallback and order ---
 
@@ -131,7 +152,7 @@ class McpSearchServer {
       let finalResults: StandardizedSearchResult[] = [];
       let errorMessages: string[] = [];
       let successfulProvider: string | null = null;
-      const timeoutMs = 10000; // 10 second timeout per provider
+      const timeoutMs = 30000; // 15 second timeout per provider
 
       for (const provider of providersAttemptedOrder) { // Use the list captured for tracking
         try {
@@ -155,26 +176,36 @@ class McpSearchServer {
                  throw new Error('Tavily API key missing');
                }
                break;
-             // Add cases for other providers here
-          }
-           // --- End of moved API key check ---
+             case 'duckduckgo':
+               // DuckDuckGo does not require an API key
+               break;
+             case 'brave':
+               if (!API_KEYS.brave_key) {
+                 throw new Error('Brave Search API key missing');
+               }
+               break;
+           }
+            // --- End of moved API key check ---
 
-
-          console.error(`Attempting search with ${provider}...`);
-
-          // Prepare provider-specific arguments
-          let providerArgs: any[];
-          switch (provider) {
-            case 'google':
-              providerArgs = [API_KEYS.google_key, API_KEYS.google_cx, numResults];
-              break;
-            case 'tavily':
-              providerArgs = [API_KEYS.tavily_key, numResults];
-              break;
-            default:
-              // Should not happen due to earlier checks, but good practice
-              throw new McpError(ErrorCode.InternalError, `Internal error: Unknown provider ${provider}`);
-          }
+           // Prepare provider-specific arguments
+           let providerArgs: any[];
+           switch (provider) {
+             case 'google':
+               providerArgs = [API_KEYS.google_key, API_KEYS.google_cx, numResults];
+               break;
+             case 'tavily':
+               providerArgs = [API_KEYS.tavily_key, numResults];
+               break;
+             case 'duckduckgo':
+               providerArgs = [numResults];
+               break;
+             case 'brave':
+               providerArgs = [API_KEYS.brave_key, numResults];
+               break;
+             default:
+               // Should not happen due to earlier checks, but good practice
+               throw new McpError(ErrorCode.InternalError, `Internal error: Unknown provider ${provider}`);
+           }
 
           // Execute search with timeout
           const rawResults = await Promise.race([
@@ -189,7 +220,6 @@ class McpSearchServer {
           if (standardized.length > 0) {
             finalResults = standardized;
             successfulProvider = provider;
-            console.error(`Search successful with ${provider}.`);
             break; // Exit loop on first success
           } else {
             console.error(`${provider} returned 0 results.`);

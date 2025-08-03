@@ -4,11 +4,12 @@ This package exists to provide a unified MCP (Model Context Protocol) interface 
 
 ## Features
 
-*   Supports Google Custom Search and Tavily Search.
+*   Supports Google Custom Search, Tavily Search, DuckDuckGo Search, and Brave Search.
 *   Exposes a single MCP tool: `search`.
-*   Allows specifying a provider directly or uses a priority-based fallback (default: Tavily, Google).
+*   Allows specifying a provider directly or uses a priority-based fallback (default: Tavily, Google, DuckDuckGo, Brave).
 *   Standardizes search results into a common format.
 *   Configurable via environment variables.
+*   Brave Search support (requires API key passed via MCP env, not .env).
 
 ## Getting Free API Credentials
 
@@ -18,6 +19,14 @@ This package exists to provide a unified MCP (Model Context Protocol) interface 
 2. After verifying your email, log in to your Tavily dashboard.
 3. Navigate to the API section and generate a free API key.
 4. Copy the API key and use it as `TAVILY_API_KEY` in your configuration.
+
+### Brave Search
+
+1. Go to [Brave Search API](https://brave.com/search/api/) and click "Get started".
+2. Sign in or create a Brave account.
+3. Follow the instructions to subscribe to the Brave Search API (free tier available).
+4. Once subscribed, go to your Brave dashboard and generate an API key.
+5. Copy the API key and use it as `BRAVE_API_KEY` in your MCP client configuration (must be passed via MCP env, not .env).
 
 ### Google Custom Search
 
@@ -57,17 +66,23 @@ npm start
           "autoApprove": [],
           "disabled": false, // Set to false to enable
           "timeout": 120,
-          "command": "node", // Or the command to run the server
+          "command": "npx", // Or the command to run the server
           "args": [
-            // Path to the built server index file
-            "/path/to/your/MCP/mcp-search-server/build/index.js"
+              "-y",
+              "mcp-search-server"
           ],
           "env": {
             // Required API Keys
             "TAVILY_API_KEY": "YOUR_TAVILY_API_KEY",
             "GOOGLE_API_KEY": "YOUR_GOOGLE_API_KEY",
             "GOOGLE_CX": "YOUR_GOOGLE_CUSTOM_SEARCH_ENGINE_ID",
-            "BING_API_KEY": "YOUR_BING_SUBSCRIPTION_KEY", // Add if using Bing
+            "BRAVE_API_KEY": "YOUR_BRAVE_SEARCH_API_KEY", // Brave Search API Key (must be passed via MCP env, not .env)
+
+            // DuckDuckGo does not require an API key.
+
+            // Optional: Configure providers and strategy
+            "SEARCH_PROVIDERS": "tavily,google,duckduckgo,brave", // Comma-separated list of providers in desired priority
+            "SEARCH_STRATEGY": "random", // Or "priority"
 
             // Optional Port Override
             "PORT": "3002" // Example: run on port 3002 instead of default
@@ -92,10 +107,10 @@ The server will start, typically on port 3001 (or the port specified in `.env`).
 
 ## MCP Tool: `search`
 
-*   **Description:** Performs a web search using multiple providers (Tavily, Google, Bing) with priority fallback.
+*   **Description:** Performs a web search using multiple providers (Tavily, Google, DuckDuckGo, Brave) with priority fallback.
 *   **Input Schema:**
     *   `query` (string, required): The search term.
-    *   `provider` (string, optional, enum: \["google", "tavily"]): Specify a provider directly. If omitted, uses priority fallback.
+    *   `provider` (string, optional, enum: \["google", "tavily", "duckduckgo", "brave"]): Specify a provider directly. If omitted, uses priority fallback.
     *   `num_results` (integer, optional, default: 10): Number of results desired (min: 1, max: 20).
 *   **Output:** A JSON object containing an array of content objects, where each object represents a structured search result:
     ```json
@@ -119,4 +134,4 @@ Add the server command (e.g., `node build/index.js`) or connection details to yo
 
 ## Modifying Provider Priority
 
-Edit the `PROVIDER_PRIORITY` array in `src/config.ts` (and rebuild) to change the fallback order. The default is `['tavily', 'google']`.
+Edit the `PROVIDER_LIST` array in `src/config.ts` (and rebuild) to change the fallback order. The default is `['tavily', 'google', 'duckduckgo', 'brave']`.
