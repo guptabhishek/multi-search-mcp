@@ -1,0 +1,50 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js'],
+      env: {
+        TAVILY_API_KEY: config.tavilyApiKey || '',
+        GOOGLE_API_KEY: config.googleApiKey || '',
+        GOOGLE_CX: config.googleCx || '',
+        BRAVE_API_KEY: config.braveApiKey || '',
+        SEARCH_PROVIDERS: config.searchProviders || undefined,
+        SEARCH_STRATEGY: config.searchStrategy || undefined,
+      }
+    })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required: []
+    properties:
+      tavilyApiKey:
+        type: string
+        description: Tavily API key
+      googleApiKey:
+        type: string
+        description: Google API key
+      googleCx:
+        type: string
+        description: Google Custom Search Engine ID
+      braveApiKey:
+        type: string
+        description: Brave Search API key
+      searchProviders:
+        type: string
+        description: Comma-separated list of providers (tavily,google,duckduckgo,brave)
+      searchStrategy:
+        type: string
+        default: random
+        description: "Search strategy: priority or random"
+  exampleConfig:
+    tavilyApiKey: YOUR_TAVILY_API_KEY
+    googleApiKey: YOUR_GOOGLE_API_KEY
+    googleCx: YOUR_GOOGLE_CX_ID
+    braveApiKey: YOUR_BRAVE_API_KEY
+    searchProviders: tavily,google,duckduckgo,brave
+    searchStrategy: priority

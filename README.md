@@ -1,5 +1,7 @@
 # MCP Search Server
 
+[![smithery badge](https://smithery.ai/badge/@guptabhishek/multi-search-mcp)](https://smithery.ai/server/@guptabhishek/multi-search-mcp)
+
 This package exists to provide a unified MCP (Model Context Protocol) interface for multi-provider web search. It allows you to leverage the free monthly quota given by multiple search services (such as Google and Tavily) by automatically falling back between them, maximizing your available search capacity for automation and AI workflows.
 
 ## Features
@@ -41,6 +43,15 @@ This package exists to provide a unified MCP (Model Context Protocol) interface 
 
 ## Setup
 
+### Installing via Smithery
+
+To install multi-search-mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@guptabhishek/multi-search-mcp):
+
+```bash
+npx -y @smithery/cli install @guptabhishek/multi-search-mcp --client claude
+```
+
+### Installing Manually
 After updating your configuration or credentials, run:
 
 ```bash
