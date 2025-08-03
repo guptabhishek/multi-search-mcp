@@ -1,6 +1,6 @@
 {
   "name": "@abhishekguptain/mcp-search-server",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Multi Provider Search MCP supporting Google, Tavily, DuckDuckGo, and Brave providers.",
   "private": false,
   "keywords": ["search", "mcp", "google", "tavily", "duckduckgo", "brave", "multi-provider", "web search"],
@@ -14,7 +14,8 @@
   "scripts": {
     "build": "tsc && echo '#!/usr/bin/env node\\n' | cat - build/index.js > temp && mv temp build/index.js && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
