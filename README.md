@@ -1,6 +1,6 @@
 # MCP Search Server
 
-[![smithery badge](https://smithery.ai/badge/@guptabhishek/multi-search-mcp)](https://smithery.ai/server/@guptabhishek/multi-search-mcp)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.guptabhishek/multi-search-mcp)](https://lightnow.ai/servers/io.github.guptabhishek/multi-search-mcp)
 
 This package exists to provide a unified MCP (Model Context Protocol) interface for multi-provider web search. It allows you to leverage the free monthly quota given by multiple search services (such as Google and Tavily) by automatically falling back between them, maximizing your available search capacity for automation and AI workflows.
 
